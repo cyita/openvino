@@ -85,6 +85,7 @@ bool concat_in_place_optimization::match(const program_node& concat_node,
     GPU_DEBUG_IF(concat_node.get_config().get_disable_runtime_buffer_fusing()) {
         do_runtime_buffer_fusing = false;
     }
+    // bool do_runtime_buffer_fusing = false; //!concat_node.get_config().get_disable_runtime_buffer_fusing();
 
     auto concat_axis = concat_params.typed_desc<concatenation>()->axis;
     size_t concat_axis_index = concat_axis < 0 ? concat_axis + concat_params.get_output_layout().get_rank() : concat_axis;
@@ -545,6 +546,8 @@ bool crop_in_place_optimization::match(const program_node& node,
 
     if (node.get_users().size() > 0) {
         GPU_DEBUG_IF(node.get_config().get_disable_runtime_buffer_fusing() && node.is_dynamic()) {
+        // //if (node.get_config().get_disable_runtime_buffer_fusing() && node.is_dynamic()) {
+        // if (node.is_dynamic()) {
             return false;
         }
 

@@ -1627,6 +1627,7 @@ void primitive_inst::do_runtime_in_place_concat() {
     };
     OV_ITT_SCOPED_TASK(ov::intel_gpu::itt::domains::intel_gpu_plugin, openvino::itt::handle("do_runtime_in_place_concat: " + id()));
     GPU_DEBUG_IF(get_config().get_disable_runtime_buffer_fusing()) {
+    // if (1) {//get_config().get_disable_runtime_buffer_fusing()) {
         return;
     }
     if (_update_shape_done_by_other) {
@@ -1743,6 +1744,7 @@ void primitive_inst::do_runtime_skip_scatter_update() {
 void primitive_inst::do_runtime_in_place_crop() {
     OV_ITT_SCOPED_TASK(ov::intel_gpu::itt::domains::intel_gpu_plugin, openvino::itt::handle("do_runtime_in_place_crop: " + id()));
     GPU_DEBUG_IF(get_config().get_disable_runtime_buffer_fusing()) {
+    // if (1) { //get_config().get_disable_runtime_buffer_fusing()) {
         return;
     }
 
@@ -2552,8 +2554,18 @@ memory::ptr primitive_inst::allocate_output(engine& _engine,
         }
     } else if (!node.can_share_buffer() || impl_params.can_be_optimized() || node.is_output()) {
         GPU_DEBUG_LOG << "[" << node.id() << ": output]" << std::endl;
+        if (net_id == 3) {
+            //printf("#### allocate_memory: node_id = %d, bufSize = %d, alloc_type = %d\n", node.id(), layout.get_linear_size(), alloc_type);
+            GPU_DEBUG_TRACE_DETAIL << "#### allocate_memory node_id = " << node.id() << 
+                ", bufSize = " << layout.get_linear_size() << ", alloc_type = " << alloc_type << std::endl;
+        }
         return _engine.allocate_memory(layout, alloc_type, reset);
     } else {
+        if (net_id == 3) {
+            //printf("#### get_memory_from_pool: node_id = %d, bufSize = %d, alloc_type = %d\n", node.id(), layout.get_linear_size(), alloc_type);
+            GPU_DEBUG_TRACE_DETAIL << "#### get_memory_from_pool node_id = " << node.id() << 
+                ", bufSize = " << layout.get_linear_size() << ", alloc_type = " << alloc_type << std::endl;
+        }
         return get_memory_from_pool(_engine,
                                     net_id,
                                     pool,
