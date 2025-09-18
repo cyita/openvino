@@ -2552,12 +2552,17 @@ memory::ptr primitive_inst::allocate_output(engine& _engine,
             GPU_DEBUG_LOG << "[" << node.id() << ": constant]" << std::endl;
             return _engine.allocate_memory(layout, alloc_type, reset);
         }
-    } else if (!node.can_share_buffer() || impl_params.can_be_optimized() || node.is_output()) {
+    // } else if (!node.can_share_buffer() || impl_params.can_be_optimized() || node.is_output()) {
+    } else if (!node.can_share_buffer() || node.is_output()) {
         GPU_DEBUG_LOG << "[" << node.id() << ": output]" << std::endl;
         if (net_id == 3) {
             //printf("#### allocate_memory: node_id = %d, bufSize = %d, alloc_type = %d\n", node.id(), layout.get_linear_size(), alloc_type);
             GPU_DEBUG_TRACE_DETAIL << "#### allocate_memory node_id = " << node.id() << 
-                ", bufSize = " << layout.get_linear_size() << ", alloc_type = " << alloc_type << std::endl;
+                ", bufSize = " << layout.get_linear_size() << ", alloc_type = " << alloc_type <<
+                ", reusable_across_network = " << reusable_across_network <<
+                ", can_share_buffer = " << node.can_share_buffer() << 
+                ", can_be_optimized = " << impl_params.can_be_optimized() <<
+                ", is_output = " << node.is_output() << std::endl;
         }
         return _engine.allocate_memory(layout, alloc_type, reset);
     } else {
