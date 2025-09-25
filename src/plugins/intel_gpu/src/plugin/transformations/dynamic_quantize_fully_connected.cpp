@@ -37,6 +37,10 @@ DynamicQuantizeFullyConnected::DynamicQuantizeFullyConnected(uint64_t group_size
 
         auto m_fc = ov::as_type_ptr<op::FullyConnectedCompressed>(m.get_match_root());
 
+        // printf("dynamic_q node name: %s\n", m_fc->get_name());
+
+        GPU_DEBUG_TRACE << "dynamic_q node: " << m_fc << std::endl;
+
         auto weight_shape = m_fc->get_input_partial_shape(1);
         const size_t innermost_size = weight_shape[weight_shape.size() - 1].get_length();
         if (group_size != UINT64_MAX &&

@@ -123,14 +123,14 @@ CommonDispatchData DynamicQuantizeKernelOpt::SetDefault(const dynamic_quantize_p
         // NOTE: this implementation is not directly applicable to per-token case because dyn_quan_gs / (simd*vec_size) may exceed LWS size limit.
         dispatchData.lws = {simd, dyn_quan_gs / (simd * vec_size), 1};
     } else if (mode == DynQuanMode::PER_TOKEN) {
-        auto vec_size = get_match_vector_size(params);
-        auto bf_size = get_input_bf_size(params);
-        size_t total_block_num = bf_size.second / (simd * vec_size);
-        size_t batch = bf_size.first;
-        size_t block_num = (total_block_num > 32) ? 32 : total_block_num;
+        auto vec_size = get_match_vector_size(params);                      // 1280 -> 8
+        auto bf_size = get_input_bf_size(params);                           // 9048, 1280
+        size_t total_block_num = bf_size.second / (simd * vec_size);        // 1280 / (16 * 8) = 10
+        size_t batch = bf_size.first;                                       // 9048
+        size_t block_num = (total_block_num > 32) ? 32 : total_block_num;   // 10
 
-        dispatchData.gws = {simd, block_num, batch};
-        dispatchData.lws = {simd, block_num, 1};
+        dispatchData.gws = {simd, block_num, batch};                        // 16, 10, 9048
+        dispatchData.lws = {simd, block_num, 1};                            // 16, 10, 1
     } else {
         OPENVINO_ASSERT(false);
     }

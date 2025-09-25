@@ -192,6 +192,14 @@ KernelList kernel_selector_base::GetAllImplementations(const Params& params, Ker
         GPU_DEBUG_COUT << "No implementation for " << params.layerID << " because of kernel type mismatch" << std::endl;
     }
 
+    if (kType == KernelType::DYNAMIC_QUANTIZE) {
+        GPU_DEBUG_COUT << "dq kernel select: " << std::endl;
+        for (const auto& implementation : result) {
+            std::string kernelName = implementation->GetName();
+            GPU_DEBUG_COUT << kernelName << ", "  << std::endl;
+        }
+    }
+
     return result;
 }
 
