@@ -25,6 +25,8 @@
 #include "openvino/op/tensor_iterator.hpp"
 #include "openvino/op/bucketize.hpp"
 #include "openvino/op/util/binary_elementwise_bitwise.hpp"
+#include "ov_ops/fully_connected.hpp"
+#include "ov_ops/fully_connected_compressed.hpp"
 
 #include "intel_gpu/primitives/data.hpp"
 #include "intel_gpu/runtime/debug_configuration.hpp"
@@ -70,6 +72,7 @@ static cldnn::tensor getConstTensor(const ov::Shape constDims) {
 
 struct ConstProperties {
     bool needsBatchInterpretation;
+    int  secondDimPadding;
 };
 
 static void create_data(ProgramBuilder& p, const ov::Shape& const_shape, const std::shared_ptr<ov::op::v0::Constant>& op, const ConstProperties& props) {
@@ -130,6 +133,9 @@ static bool is_btiwise(Node* node) {
 static void CreateConstantOp(ProgramBuilder& p, const std::shared_ptr<ov::op::v0::Constant>& op) {
     ov::Shape constDims = op->get_shape();
     auto constUsers = op->get_output_target_inputs(0);
+    auto constType = op->get_element_type();
+    auto constName = op->get_friendly_name();
+    std::cout << "const type: " << constType << std::endl;
     std::unordered_map<std::shared_ptr<ov::op::v0::Constant>, ConstProperties> consts = {
         {op, {false}}
     };
@@ -185,6 +191,15 @@ static void CreateConstantOp(ProgramBuilder& p, const std::shared_ptr<ov::op::v0
     // Also check if constant users is a backprop convolution - in that case O and I need to be swapped.
     for (auto& node : constUsers) {
         auto outOp = node.get_node();
+        auto typeName = outOp->get_type_name();
+        auto typeInfo = outOp->get_type_info();
+        // FullyConnectedCompressed
+        auto is_fully = ov::is_type<ov::op::internal::FullyConnected>(outOp);
+        auto is_fully_compressed = ov::is_type<ov::op::internal::FullyConnectedCompressed>(outOp);
+        auto is_fully_compressed_char = std::strcmp(typeName, "FullyConnectedCompressed") == 0;
+        std::cout << constName << ", user type: " << typeName << ", user type info: "<< typeInfo << ", is is_fully_compressed_char: " << is_fully_compressed_char << ", is_fully_compressed: " << is_fully_compressed << std::endl;
+        
+        consts[op].secondDimPadding = 0;
         if (auto castedOp = ov::as_type<ov::op::v0::Concat>(outOp)) {
             if (castedOp->get_axis() == 0) {
                 consts[op].needsBatchInterpretation = constDims.size() == 1;
@@ -242,6 +257,8 @@ static void CreateConstantOp(ProgramBuilder& p, const std::shared_ptr<ov::op::v0
             // And each layout will be like Parameter->Result [N, 1, 1, 1], Constant->Result [1, N, 1, 1], that produces layout mismatch error.
             // For that case, Constant->Result needs to be [N, 1, 1, 1]
             consts[op].needsBatchInterpretation = constDims.size() == 1;
+        } else if (is_fully_compressed_char && constDims[1] == 3420) {
+            consts[op].secondDimPadding = 4;
         }
     }
 

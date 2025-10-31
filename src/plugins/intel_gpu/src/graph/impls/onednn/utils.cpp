@@ -312,6 +312,9 @@ dnnl::memory::desc layout_to_memory_desc(cldnn::layout l, dnnl::memory::format_t
         dims = flatten_tensor(l.get_tensor());
         dims.insert(dims.begin(), 1);
     } else if (target_fmt == dnnl::memory::format_tag::ab) {
+        auto dim1 = l.get_tensor().count() / l.batch();
+        std::cout << "format ab dim 0: " << l.batch() << ", dim 1: " << dim1 << 
+            ", use_strides: " << use_strides << std::endl << std::flush;
         dims.push_back(l.batch());
         dims.push_back(l.get_tensor().count() / l.batch());
     } else if (target_fmt == dnnl::memory::format_tag::abc) {
@@ -341,6 +344,8 @@ dnnl::memory::desc layout_to_memory_desc(cldnn::layout l, dnnl::memory::format_t
         dims.push_back(l.spatial(0));
         dims.push_back(l.spatial(1));
     } else if (target_fmt == dnnl::memory::format_tag::ba) {
+        std::cout << "format ba dim 0: " << l.feature() << ", dim 1: " << l.get_tensor().count() / l.feature() << 
+            ", use_strides: " << use_strides << std::endl << std::flush;
         dims.push_back(l.feature());
         dims.push_back(l.get_tensor().count() / l.feature());
     } else if (flatten) {

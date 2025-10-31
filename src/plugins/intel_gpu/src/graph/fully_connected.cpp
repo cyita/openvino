@@ -97,6 +97,8 @@ format::type get_preferred_format(fully_connected_node const& node, const kernel
 layout fully_connected_inst::calc_output_layout(fully_connected_node const& node, kernel_impl_params const& impl_param) {
     auto desc = impl_param.typed_desc<fully_connected>();
 
+    printf("-----------calc_output_layout ");
+
     auto input_layout = impl_param.get_input_layout();
     auto input_pshape = input_layout.get_partial_shape();
     auto weights_layout = *impl_param.weights_layout;

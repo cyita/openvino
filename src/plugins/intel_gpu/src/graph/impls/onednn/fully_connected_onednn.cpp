@@ -356,6 +356,8 @@ public:
     }
 
     static std::unique_ptr<primitive_impl> create(const fully_connected_node& arg, const kernel_impl_params& impl_params) {
+        // std::cout << "onednn create" << std::endl;
+        
         auto& engine = impl_params.prog->get_engine();
         auto& config = impl_params.prog->get_config();
         auto attr = impl_params.attrs_onednn;
@@ -364,6 +366,8 @@ public:
         dnnl::memory::data_type ds_data_type = dnnl::memory::data_type::undef;
         dnnl::memory::data_type dzp_data_type = dnnl::memory::data_type::undef;
         int idx = !arg.bias_term() ? 1 : 2;
+
+        std::cout << "create: " << impl_params.get_input_layout(0) << std::endl;
 
         if (prim->compressed_weights) {
             bool is_dyn_quan_input = impl_params.get_input_layout(0).data_type == data_types::i8 || impl_params.get_input_layout(0).data_type == data_types::u8;
