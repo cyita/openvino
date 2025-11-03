@@ -623,7 +623,7 @@ bool primitive_inst::need_reset_output_memory() const {
             auto feature_block_size = get_feature_block_size(fmt);
             // if layout is single blocked and feature size is not aligned with the blocking size, need to reset output so that we can guarantee zero-filling
             // NOTE: We may improve this logic to avoid reset if we are sure that it is not "corrupted" by other layers.
-            if (output_layout.feature() % feature_block_size != 0) {
+            if (output_layout.is_static() && output_layout.feature() % feature_block_size != 0) {
                 return true;
             }
         }
