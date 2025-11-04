@@ -208,6 +208,7 @@ protected:
         auto input_dims2 = input_layout.get_tensor().count() / input_layout.batch();
         // std::cout << "input_dims: " << input_dims << ", " << input_dims2 << std::endl;
         use_strides_for_input_md = input_dims2 == 3420 ? onednn::mem_flags::use_strides : onednn::mem_flags::None;
+        use_strides_for_weight_md = use_strides_for_input_md;
 
         dnnl::memory::desc input_md = onednn::layout_to_memory_desc(input_layout, target_fmt, use_strides_for_input_md);
         dnnl::memory::desc weights_md = onednn::layout_to_memory_desc(weights_layout, weights_fmt, use_strides_for_weight_md);

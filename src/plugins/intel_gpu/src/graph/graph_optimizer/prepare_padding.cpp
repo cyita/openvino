@@ -74,7 +74,7 @@ void prepare_padding::run(program& p) {
                 auto input0_new_layout = node->get_input_layout(0);
                 
                 input0_new_layout.data_padding = padding::max(input0_new_layout.data_padding, padding({0}, new_onednn_paddings));
-                std::cout << "new input0_new_layout" << input0_new_layout << std::endl;
+                // std::cout << "new input0_new_layout" << input0_new_layout << std::endl;
                 auto new_input_reorder = std::make_shared<reorder>("padding_reorder_for_" + node->get_dependency(0).id(),
                                                                     input_info(node->get_dependency(0).id()),
                                                                     input0_new_layout);
@@ -82,16 +82,16 @@ void prepare_padding::run(program& p) {
                 p.add_intermediate(new_input_reorder_node, *node, node->get_dependency(0), new_input_reorder_node.get_dependencies().empty());
                 new_input_reorder_node.recalc_output_layouts(false);
 
-                // auto weight_in_layout  = weight_layout.convert_to_weights_layout(false);
-                // auto weight_out_layout = weight_in_layout;
-                // weight_out_layout.data_padding = padding::max(weight_out_layout.data_padding, padding({0}, new_onednn_paddings));
+                auto weight_in_layout  = weight_layout.convert_to_weights_layout(false);
+                auto weight_out_layout = weight_in_layout;
+                weight_out_layout.data_padding = padding::max(weight_out_layout.data_padding, padding({0}, new_onednn_paddings));
                 // std::cout << "new weight_out_layout" << weight_out_layout << std::endl;
-                // auto weights_reorder_params = std::make_shared<WeightsReorderParams>(weight_in_layout, weight_out_layout, false, false);
-                // auto new_reorder = std::make_shared<reorder>("padding_reorder_for_" + weight_node.id(),
-                //                                              weight_node.id(), weights_reorder_params);
-                // auto& new_weight_reorder_node = p.get_or_create(new_reorder);
-                // p.add_intermediate(new_weight_reorder_node, *node, weight_node, new_weight_reorder_node.get_dependencies().empty());
-                // new_weight_reorder_node.recalc_output_layouts(false);
+                auto weights_reorder_params = std::make_shared<WeightsReorderParams>(weight_in_layout, weight_out_layout, false, false);
+                auto new_reorder = std::make_shared<reorder>("padding_reorder_for_" + weight_node.id(),
+                                                             weight_node.id(), weights_reorder_params);
+                auto& new_weight_reorder_node = p.get_or_create(new_reorder);
+                p.add_intermediate(new_weight_reorder_node, *node, weight_node, new_weight_reorder_node.get_dependencies().empty());
+                new_weight_reorder_node.recalc_output_layouts(false);
             }
         }
     }
