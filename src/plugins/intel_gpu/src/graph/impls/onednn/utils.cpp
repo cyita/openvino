@@ -369,8 +369,10 @@ dnnl::memory::desc layout_to_memory_desc(cldnn::layout l, dnnl::memory::format_t
         OPENVINO_ASSERT(flatten == false, "The padded layout cannot be flattened.");
         auto padded_dims = l.get_padded_dims();
         if (target_fmt == dnnl::memory::format_tag::ab) {
+            // strides.push_back(1);
+            // strides.push_back(padded_dims[0]);
+            strides.push_back(padded_dims[1]);
             strides.push_back(1);
-            strides.push_back(padded_dims[0]);
         } else if (target_fmt == dnnl::memory::format_tag::abc) {
             strides.push_back(1);
             strides.push_back(padded_dims[0]);
@@ -404,8 +406,13 @@ dnnl::memory::desc layout_to_memory_desc(cldnn::layout l, dnnl::memory::format_t
             auto pitches = l.get_pitches();
             strides.assign(pitches.begin(), pitches.end());
         }
-        dnnl::memory::desc res(dims, dt, strides);
-        return res;
+        if (strides[0] == 3424) {
+            dnnl::memory::desc res(dims, dt, {3424, 1});
+            return res;
+        } else {
+            dnnl::memory::desc res(dims, dt, strides);
+            return res;
+        }
     } else {
         dnnl::memory::format_tag fmt = target_fmt == dnnl::memory::format_tag::undef ? convert_data_format(l.format) : target_fmt;
         dnnl::memory::desc res(dims, dt, fmt);

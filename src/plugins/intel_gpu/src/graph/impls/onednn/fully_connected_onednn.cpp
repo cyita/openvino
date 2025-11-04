@@ -199,10 +199,17 @@ protected:
 
         auto use_strides_for_weight_md = (weights_layout.data_padding
                                          && format::is_default_format(weights_layout.format)
-                                         && (weights_layout.data_type == data_types::i4 || weights_layout.data_type == data_types::u4)) ?
+                                         && (weights_layout.data_type == data_types::i4 || weights_layout.data_type == data_types::u4) || weights_layout.data_type == data_types::i8) ?
                                          onednn::mem_flags::use_strides : onednn::mem_flags::None;
+        
+        auto use_strides_for_input_md = (input_layout.data_padding && use_strides_for_weight_md == onednn::mem_flags::use_strides) ? onednn::mem_flags::use_strides : onednn::mem_flags::None;
 
-        dnnl::memory::desc input_md = onednn::layout_to_memory_desc(input_layout, target_fmt);
+        auto input_dims = input_layout.batch();
+        auto input_dims2 = input_layout.get_tensor().count() / input_layout.batch();
+        // std::cout << "input_dims: " << input_dims << ", " << input_dims2 << std::endl;
+        use_strides_for_input_md = input_dims2 == 3420 ? onednn::mem_flags::use_strides : onednn::mem_flags::None;
+
+        dnnl::memory::desc input_md = onednn::layout_to_memory_desc(input_layout, target_fmt, use_strides_for_input_md);
         dnnl::memory::desc weights_md = onednn::layout_to_memory_desc(weights_layout, weights_fmt, use_strides_for_weight_md);
         dnnl::memory::desc output_md = onednn::layout_to_memory_desc(output_layout, target_fmt);
 

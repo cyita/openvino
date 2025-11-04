@@ -23,6 +23,7 @@ void prepare_padding::run(program& p) {
         auto& weight_node = node->get_dependency(1);
         if (weight_node.is_constant()) {
             const size_t alignment = 2;
+            const size_t onednn_i8_alignment = 16;
             auto weight_layout = weight_node.get_output_layout(0);
             const auto const_shape = weight_layout.get_partial_shape().to_shape();
             OPENVINO_ASSERT(const_shape.size() > 0, "Data padding for int4 type data with an odd innermost dimension does not support zero dimension.");
@@ -63,6 +64,34 @@ void prepare_padding::run(program& p) {
                     p.add_intermediate(new_input_reorder_node, *node, node->get_dependency(0), new_input_reorder_node.get_dependencies().empty());
                     new_input_reorder_node.recalc_output_layouts(false);
                 }
+            } else if (node->get_preferred_impl_type() == impl_types::onednn &&
+                       weight_node.get_output_layout(0).data_type == cldnn::data_types::i8 &&
+                       node->as<fully_connected>().get_primitive()->input_size == 2 &&
+                       const_shape[inner_most_idx] % onednn_i8_alignment != 0) {
+                // fully_connected onednn with i8 compressed weights requires 16-bytes aligned input & weight in the inner shape.
+                std::vector<ov::Dimension::value_type> new_onednn_paddings(const_shape.size(), 0);
+                new_onednn_paddings[inner_most_idx] = 16 - const_shape[inner_most_idx] % onednn_i8_alignment;
+                auto input0_new_layout = node->get_input_layout(0);
+                
+                input0_new_layout.data_padding = padding::max(input0_new_layout.data_padding, padding({0}, new_onednn_paddings));
+                std::cout << "new input0_new_layout" << input0_new_layout << std::endl;
+                auto new_input_reorder = std::make_shared<reorder>("padding_reorder_for_" + node->get_dependency(0).id(),
+                                                                    input_info(node->get_dependency(0).id()),
+                                                                    input0_new_layout);
+                auto& new_input_reorder_node = p.get_or_create(new_input_reorder);
+                p.add_intermediate(new_input_reorder_node, *node, node->get_dependency(0), new_input_reorder_node.get_dependencies().empty());
+                new_input_reorder_node.recalc_output_layouts(false);
+
+                // auto weight_in_layout  = weight_layout.convert_to_weights_layout(false);
+                // auto weight_out_layout = weight_in_layout;
+                // weight_out_layout.data_padding = padding::max(weight_out_layout.data_padding, padding({0}, new_onednn_paddings));
+                // std::cout << "new weight_out_layout" << weight_out_layout << std::endl;
+                // auto weights_reorder_params = std::make_shared<WeightsReorderParams>(weight_in_layout, weight_out_layout, false, false);
+                // auto new_reorder = std::make_shared<reorder>("padding_reorder_for_" + weight_node.id(),
+                //                                              weight_node.id(), weights_reorder_params);
+                // auto& new_weight_reorder_node = p.get_or_create(new_reorder);
+                // p.add_intermediate(new_weight_reorder_node, *node, weight_node, new_weight_reorder_node.get_dependencies().empty());
+                // new_weight_reorder_node.recalc_output_layouts(false);
             }
         }
     }
