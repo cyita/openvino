@@ -33,48 +33,68 @@ public:
 
     bool is_runtime_propagatable_padding() const {
         auto prim = typed_desc();
-        if (prim->mode == reshape::reshape_mode::squeeze || prim->mode == reshape::reshape_mode::unsqueeze) {
+        // bool contain_squeeze = get_org_primitive_id().find("Squeeze") != std::string::npos;
+        bool contain_squeeze = false;
+        // std::cout << "is_runtime_propagatable_padding: " << get_org_primitive_id() << ", mode: " << prim->mode << ". contain squeeze: " << contain_squeeze << std::endl;
+        if (prim->mode == reshape::reshape_mode::squeeze || prim->mode == reshape::reshape_mode::unsqueeze || contain_squeeze) {
             // For proper padding propagation we need to know output pattern at model loading stage
             // in case of squeeze/unsqueeze mode
-            if (prim->output_pattern.empty())
+            if (prim->output_pattern.empty()) {
+                // std::cout << "prim->output_pattern.empty()" << std::endl;
                 return false;
+            }
 
-            if (input().is_type<crop>() && prim->mode == reshape::reshape_mode::squeeze) {
+            if (input().is_type<crop>() && (prim->mode == reshape::reshape_mode::squeeze || contain_squeeze)) {
                 const auto crop_axis = input().as<crop>().get_primitive()->axis;
                 const auto& output_pattern = prim->output_pattern;
 
                 // Do not propagate output padding in squeeze mode if the squeezed dimension corresponds to the crop axis
-                return std::find(output_pattern.begin(), output_pattern.end(), crop_axis) == output_pattern.end();
+                // return std::find(output_pattern.begin(), output_pattern.end(), crop_axis) == output_pattern.end();
+                bool res = std::find(output_pattern.begin(), output_pattern.end(), crop_axis) == output_pattern.end();
+                // std::cout << "crop squeeze: " << res << ", crop_axis: " << crop_axis << ", output_pattern: " << output_pattern << std::endl;
+                return res;
             }
 
             return true;
         }
 
         // TODO: This function is to limit condition to a specific case (crop + reshape) among cases for the base mode
-        if (!input().is_type<crop>())
+        if (!input().is_type<crop>()) {
+            // std::cout << "!input().is_type<crop>()" << std::endl;
             return false;
+        }
 
         // oneDNN supports padded input of outer axis only for buffer fusing on static shape
-        if (!has_outer_padding_offset() && get_users().size() == 1 && get_users().front()->get_preferred_impl_type() == impl_types::onednn)
+        if (!has_outer_padding_offset() && get_users().size() == 1 && get_users().front()->get_preferred_impl_type() == impl_types::onednn) {
+            // std::cout << "onednn" << std::endl;
             return false;
+        }
+            
 
         // TODO: If user is RoPE or MVN and dynamic padding exists, ouput padding propagation is not supported in the base mode
-        if (get_users().size() == 1 && get_users().front()->is_type<mvn>())
+        if (get_users().size() == 1 && get_users().front()->is_type<mvn>()) {
+            // std::cout << "rope mvn" << std::endl;
             return false;
+        }
 
         auto axis = input().as<crop>().get_primitive()->axis;
         const auto& input_pshape = input().get_output_layout(false).get_partial_shape();
         auto input_rank = input_pshape.size();
         auto input_last_dim = static_cast<int64_t>(input_rank - 1);
         if (axis != input_last_dim || input_pshape[input_last_dim].is_dynamic())
-            return false;
+        {
+            // std::cout << "input_last_dim, " << axis << ", " << input_last_dim << ", " << input_pshape[input_last_dim].is_dynamic() << std::endl;
+            return false;            
+        }
 
         auto input_last_dim_val = input_pshape[input_last_dim].get_length();
         const auto& output_pshape = prim->output_partial_shape;
         // TODO: If the reshape's output shape is non constant, issue occurs
         // during shape inference due to execution order at runtime
-        if (prim->output_pattern.empty())
+        if (prim->output_pattern.empty()) {
+            // std::cout << "output_pattern.empty()" << std::endl;
             return false;
+        }
 
         // Iteratively check the total product of all static innermost dimensions
         // until the crop dimension value matches or the first dynamic dimension is encountered
@@ -98,8 +118,10 @@ public:
     }
 
     bool has_outer_padding_offset() const {
-        if (!has_padding())
+        if (!has_padding()) {
+            // std::cout << "has_outer_padding_offset fff" << this->get_output_layout() << input().get_output_layout(false)  << std::endl;
             return false;
+        }
 
         auto input_layout = input().get_output_layout(false);
         auto input_pad = input_layout.data_padding;
@@ -115,7 +137,7 @@ public:
             input_pad._lower_size[1] != 0)
             return false;
 
-        if (format::is_multi_blocked(input_layout.format))
+                if (format::is_multi_blocked(input_layout.format))
             return false;
 
         // Outer padding exists. It might need to update padding size of output layout
@@ -123,6 +145,8 @@ public:
     }
 
     bool is_in_place() const {
+        // std::cout << "is_in_place, " << input().get_output_layout(false).data_padding.is_dynamic() << ", "
+        //     << is_runtime_propagatable_padding() << ", " << has_padding() << std::endl;
         if (this->is_output() || this->has_fused_primitives())
             return false;
 
@@ -172,6 +196,7 @@ public:
             inner_size *= output_layout.feature();
 
             auto new_batch_pad = first_element_offset / inner_size;
+            // std::cout << "new reshape padding: " << new_batch_pad << std::endl;
             this->set_output_padding(cldnn::padding({static_cast<int32_t>(new_batch_pad), 0, 0, 0}, {0, 0, 0, 0}));
         }
 

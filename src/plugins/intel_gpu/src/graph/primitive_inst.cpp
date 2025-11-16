@@ -1950,6 +1950,8 @@ void primitive_inst::prepare_primitive() {
     const bool prev_execution_skipped = can_be_optimized()
                         || (_impl_params->output_layouts[0].is_static() && _impl_params->output_layouts[0].count() == 0);
     const auto orig_outputs = _outputs;
+    // std::cout << primitive_id << " is_dynamic: " << is_dynamic() << ", is_in_shape_of_subgraph: " << get_node().is_in_shape_of_subgraph() 
+    //             << ", has_inner_networks: " << has_inner_networks() << std::endl;
     if ((is_dynamic() || get_node().is_in_shape_of_subgraph()) && !has_inner_networks()) {
         do_runtime_in_place_concat();
         update_shape();

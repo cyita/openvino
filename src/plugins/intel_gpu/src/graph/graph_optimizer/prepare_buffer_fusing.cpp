@@ -354,11 +354,16 @@ static bool can_reshape_be_optimized(const reshape_node& node) {
 
     // Onednn supports padded input of outer axis
     if (!node.is_dynamic() && node.has_outer_padding_offset() &&
-        node.get_users().front()->get_preferred_impl_type() == impl_types::onednn)
+        node.get_users().front()->get_preferred_impl_type() == impl_types::onednn) {
+        // std::cout << "can_reshape_be_optimized onednn" << std::endl; 
         return true;
+    }
+        
 
-    if (node.is_in_place())
+    if (node.is_in_place()) {
+        // std::cout << "can_reshape_be_optimized node.is_in_place()" << std::endl; 
         return true;
+    }
 
     return false;
 }
@@ -480,6 +485,7 @@ bool crop_in_place_optimization::match(const program_node& node,
         return false;
     // if the node is marked as network output, prevent optimizations which would affect a form of its output,
     // unless debug flag is set
+    // std::cout << "is_output: " << node.is_output() << ", has_fused_primitives: " << crop_params.has_fused_primitives() << ", node.is_in_shape_of_subgraph(): " << node.is_in_shape_of_subgraph() << std::endl;
     if (node.is_output() || crop_params.has_fused_primitives() || node.is_in_shape_of_subgraph())
         return false;
 
@@ -510,9 +516,15 @@ bool crop_in_place_optimization::match(const program_node& node,
                 return false;
             auto& reshape_node = user->as<reshape>();
             if (can_reshape_be_optimized(reshape_node) &&
-                (!node.is_dynamic() || !reshape_node.is_runtime_propagatable_padding()))
+                (!node.is_dynamic() || !reshape_node.is_runtime_propagatable_padding())) {
+                // !reshape_node.is_runtime_propagatable_padding()) {
+                // std::cout << "reshape false, is_dynamic: " << node.is_dynamic() << ", is_runtime_propagatable_padding: " << reshape_node.is_runtime_propagatable_padding() << std::endl;
+                
                 return false;
+            }
         }
+
+        
         if (user->is_type<experimental_detectron_roi_feature_extractor>() && user->get_dependency_index(node) == 0)
             return false;
         if (user->is_type<lstm_seq>() || user->is_type<lstm_cell>())
@@ -551,6 +563,7 @@ bool crop_in_place_optimization::match(const program_node& node,
     } else {
         return false;
     }
+    // std::cout << "crop_in_place_match" << std::endl;
     return true;
 }
 
@@ -907,7 +920,11 @@ void prepare_buffer_fusing::run(program& p) {
             if (node.has_outer_padding_offset())
                 node.adjust_output_padding();
 
-            node.can_be_optimized(can_reshape_be_optimized(node));
+            bool reshape_can_be_optimized = can_reshape_be_optimized(node);
+
+            node.can_be_optimized(reshape_can_be_optimized);
+
+            // std::cout << "reshape_can_be_optimized: " << node.id() << ", "<< reshape_can_be_optimized << std::endl;
             GPU_DEBUG_TRACE_DETAIL << "[prepare_buffer_fusing] : " << node.id() << " can be optimized" << std::endl;
         });
         program_helpers::do_for_types<kv_cache>(*node, [](kv_cache_node& node) {

@@ -36,6 +36,7 @@
 #include "low_precision/rt_info/bias_attribute.hpp"
 #include "low_precision/strided_slice.hpp"
 #include "low_precision/transpose.hpp"
+#include "openvino/core/graph_util.hpp"
 #include "openvino/core/deprecated.hpp"
 #include "openvino/core/type/element_type.hpp"
 #include "openvino/core/validation_util.hpp"
@@ -1012,6 +1013,8 @@ void TransformationsPipeline::apply(std::shared_ptr<ov::Model> func) {
         });
 
         manager.run_passes(func);
+
+        // ov::serialize(func, "D:\\yina\\videochat-flash-cpp\\maoyuech-videochat-flash-cpp\\graph_dump\\saved_graphs\\model_after_PluginGPU.xml");
     }
 
     if (enableInt8) {
@@ -1155,6 +1158,7 @@ void TransformationsPipeline::apply(std::shared_ptr<ov::Model> func) {
         auto params = LayerTransformation::Params(true, element::f32, defaultPrecisions, reshapeIgnorePerTensorQuantizationCheck);
         lptManager.register_pass<LowPrecision>(supportedPrecisions, perTensorQuantization, params);
         lptManager.run_passes(func);
+        // ov::serialize(func, "D:\\yina\\videochat-flash-cpp\\maoyuech-videochat-flash-cpp\\graph_dump\\saved_graphs\\model_after_lpt.xml");
     }
 
     {
@@ -1176,6 +1180,7 @@ void TransformationsPipeline::apply(std::shared_ptr<ov::Model> func) {
             });
 
         manager.run_passes(func);
+        // ov::serialize(func, "D:\\yina\\videochat-flash-cpp\\maoyuech-videochat-flash-cpp\\graph_dump\\saved_graphs\\model_after_run_passes.xml");
     }
 
     {
@@ -1265,6 +1270,7 @@ void TransformationsPipeline::apply(std::shared_ptr<ov::Model> func) {
         }
 
         manager.run_passes(func);
+        // ov::serialize(func, "D:\\yina\\videochat-flash-cpp\\maoyuech-videochat-flash-cpp\\graph_dump\\saved_graphs\\model_after_act_scaling.xml");
     }
 
     {
@@ -1451,6 +1457,7 @@ void TransformationsPipeline::apply(std::shared_ptr<ov::Model> func) {
             manager.register_pass<ov::intel_gpu::PrintModelStatistics>();
         }
         manager.run_passes(func);
+        // ov::serialize(func, "D:\\yina\\videochat-flash-cpp\\maoyuech-videochat-flash-cpp\\graph_dump\\saved_graphs\\model_after_run_PostLPT.xml");
     }
 }
 }  // namespace ov::intel_gpu

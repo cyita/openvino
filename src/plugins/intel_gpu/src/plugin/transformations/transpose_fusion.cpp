@@ -77,7 +77,7 @@ bool has_optimized_version(const ov::Output<ov::Node>& output, bool supports_imm
 TransposeFusion::TransposeFusion(bool supports_immad) {
     add_matcher<TransposeMatMulTransposeMatcher>(supports_immad);
     add_matcher<TransposeMatMulMatcher>(supports_immad);
-    add_matcher<TransposeSDPAMatcher>();
+    // add_matcher<TransposeSDPAMatcher>();
     add_matcher<TransposeVLSDPAMatcher>();
 }
 

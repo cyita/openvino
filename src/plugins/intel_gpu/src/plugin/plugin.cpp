@@ -27,6 +27,7 @@
 #include "intel_gpu/runtime/itt.hpp"
 #include "openvino/core/any.hpp"
 #include "openvino/core/deprecated.hpp"
+#include "openvino/core/graph_util.hpp"
 #include "openvino/op/util/op_types.hpp"
 #include "openvino/pass/manager.hpp"
 #include "openvino/pass/visualize_tree.hpp"
@@ -135,9 +136,11 @@ void Plugin::create_weightless_cache_attributes(const std::shared_ptr<const ov::
 void Plugin::transform_model(std::shared_ptr<ov::Model>& model, const ExecutionConfig& config, const std::shared_ptr<RemoteContextImpl>& context) const {
     OV_ITT_SCOPED_TASK(itt::domains::intel_gpu_plugin, "Plugin::transform_model");
     TransformationsPipeline transformations(config, context);
+    // ov::serialize(model, "D:\\yina\\videochat-flash-cpp\\maoyuech-videochat-flash-cpp\\graph_dump\\saved_graphs\\model_before_trans.xml");
 
     auto start = Time::now();
     transformations.apply(model);
+    // ov::serialize(model, "D:\\yina\\videochat-flash-cpp\\maoyuech-videochat-flash-cpp\\graph_dump\\saved_graphs\\model_after_trans.xml");
     GPU_DEBUG_LOG << "Transformations time: " << std::chrono::duration_cast<ms>(Time::now() - start).count() << " ms" << std::endl;
 }
 
