@@ -130,6 +130,10 @@ static constexpr Property<int64_t> available_device_mem{"AVAILABLE_DEVICE_MEM_SI
  */
 static constexpr Property<bool> enable_sdpa_optimization{"GPU_ENABLE_SDPA_OPTIMIZATION"};
 
+
+static constexpr Property<bool> enable_transpose_sdpa_optimization{"GPU_TRANSPOSE_SDPA_OPTIMIZATION"};
+
+
 /**
  * @brief Turning on this key enables LoRA operation,
  * otherwise the graph will remain in its original form with the decomposed LoRA subgraph.

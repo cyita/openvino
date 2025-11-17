@@ -39,6 +39,7 @@
 #include "openvino/core/deprecated.hpp"
 #include "openvino/core/type/element_type.hpp"
 #include "openvino/core/validation_util.hpp"
+#include "openvino/core/graph_util.hpp"
 #include "openvino/op/constant.hpp"
 #include "openvino/op/convolution.hpp"
 #include "openvino/op/gather.hpp"
@@ -1052,6 +1053,7 @@ void TransformationsPipeline::apply(std::shared_ptr<ov::Model> func) {
         });
 
         manager.run_passes(func);
+        // ov::serialize(func, "D:\\yina\\videochat-flash-cpp\\maoyuech-videochat-flash-cpp\\graph_dump\\saved_graphs\\model_after_PluginGPU.xml");
     }
 
     if (enableInt8) {
@@ -1195,6 +1197,7 @@ void TransformationsPipeline::apply(std::shared_ptr<ov::Model> func) {
         auto params = LayerTransformation::Params(true, element::f32, defaultPrecisions, reshapeIgnorePerTensorQuantizationCheck);
         lptManager.register_pass<LowPrecision>(supportedPrecisions, perTensorQuantization, params);
         lptManager.run_passes(func);
+        // ov::serialize(func, "D:\\yina\\videochat-flash-cpp\\maoyuech-videochat-flash-cpp\\graph_dump\\saved_graphs\\model_after_lpt.xml");
     }
 
     {
@@ -1216,6 +1219,7 @@ void TransformationsPipeline::apply(std::shared_ptr<ov::Model> func) {
             });
 
         manager.run_passes(func);
+        // ov::serialize(func, "D:\\yina\\videochat-flash-cpp\\maoyuech-videochat-flash-cpp\\graph_dump\\saved_graphs\\model_after_run_passes.xml");
     }
 
     {
@@ -1306,6 +1310,7 @@ void TransformationsPipeline::apply(std::shared_ptr<ov::Model> func) {
         }
 
         manager.run_passes(func);
+        // ov::serialize(func, "D:\\yina\\videochat-flash-cpp\\maoyuech-videochat-flash-cpp\\graph_dump\\saved_graphs\\model_after_act_scaling.xml");
     }
 
     {
@@ -1356,7 +1361,7 @@ void TransformationsPipeline::apply(std::shared_ptr<ov::Model> func) {
         });
         manager.register_pass<ov::intel_gpu::KVCacheFusion>();
         manager.register_pass<ov::intel_gpu::FullyConnectedConvertFusion>();
-        manager.register_pass<ov::intel_gpu::TransposeFusion>(device_info.supports_immad);
+        manager.register_pass<ov::intel_gpu::TransposeFusion>(device_info.supports_immad, config.get_enable_transpose_sdpa_optimization());
 
         if (!device_info.supports_immad) {
             manager.register_pass<ov::intel_gpu::UnsqueezeBroadcastReshapeMatmulFusion>();
@@ -1491,7 +1496,10 @@ void TransformationsPipeline::apply(std::shared_ptr<ov::Model> func) {
         GPU_DEBUG_IF(config.get_verbose() >= 1) {
             manager.register_pass<ov::intel_gpu::PrintModelStatistics>();
         }
+
+        std::cout << "get_enable_transpose_sdpa_optimization: " << config.get_enable_transpose_sdpa_optimization() << std::endl;
         manager.run_passes(func);
+        // ov::serialize(func, "D:\\yina\\videochat-flash-cpp\\maoyuech-videochat-flash-cpp\\graph_dump\\saved_graphs\\model_after_run_PostLPT.xml");
     }
 }
 }  // namespace ov::intel_gpu

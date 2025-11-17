@@ -11,7 +11,7 @@ namespace ov::intel_gpu {
 class TransposeFusion: public ov::pass::GraphRewrite {
 public:
     OPENVINO_GRAPH_REWRITE_RTTI("TransposeFusion");
-    TransposeFusion(bool supports_immad = false);
+    TransposeFusion(bool supports_immad = false, bool enable_transpose_sdpa_opt = true);
 };
 
 class TransposeMatMulMatcher : public ov::pass::MatcherPass {
@@ -29,7 +29,7 @@ public:
 class TransposeSDPAMatcher : public ov::pass::MatcherPass {
 public:
     OPENVINO_MATCHER_PASS_RTTI("TransposeSDPAMatcher");
-    TransposeSDPAMatcher();
+    TransposeSDPAMatcher(bool enable_v_permute);
 };
 
 class TransposeVLSDPAMatcher : public ov::pass::MatcherPass {
