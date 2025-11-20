@@ -77,10 +77,10 @@ bool has_optimized_version(const ov::Output<ov::Node>& output, bool supports_imm
 TransposeFusion::TransposeFusion(bool supports_immad, bool enable_transpose_sdpa_opt) {
     add_matcher<TransposeMatMulTransposeMatcher>(supports_immad);
     add_matcher<TransposeMatMulMatcher>(supports_immad);
-    // if (enable_transpose_sdpa_opt) {
-    //     add_matcher<TransposeSDPAMatcher>();
-    // }
-    add_matcher<TransposeSDPAMatcher>(enable_transpose_sdpa_opt);
+    if (enable_transpose_sdpa_opt) {
+        add_matcher<TransposeSDPAMatcher>(true);
+    }
+    // add_matcher<TransposeSDPAMatcher>(enable_transpose_sdpa_opt);
     add_matcher<TransposeVLSDPAMatcher>();
 }
 
@@ -196,7 +196,7 @@ TransposeVLSDPAMatcher::TransposeVLSDPAMatcher() {
     this->register_matcher(m, callback);
 }
 
-TransposeSDPAMatcher::TransposeSDPAMatcher(bool enable_v_permute) {
+TransposeSDPAMatcher::TransposeSDPAMatcher(bool fuse_v_permute) {
     auto is_fp_type = [](const ov::Output<ov::Node>& output) -> bool {
         switch (output.get_element_type()) {
             case ov::element::f16:
@@ -277,7 +277,7 @@ TransposeSDPAMatcher::TransposeSDPAMatcher(bool enable_v_permute) {
                                                      pattern_map.at(transpose_k_order_m).get_node_shared_ptr(),
                                                      order_k, input_k_output_idx);
 
-        if (pattern_map.count(transpose_v_m) > 0 && enable_v_permute)
+        if (pattern_map.count(transpose_v_m) > 0 && fuse_v_permute)
             can_fuse_transposes &= process_transpose(pattern_map.at(transpose_v_m).get_node_shared_ptr(),
                                                      pattern_map.at(transpose_v_order_m).get_node_shared_ptr(),
                                                      order_v, input_v_output_idx);
@@ -287,14 +287,14 @@ TransposeSDPAMatcher::TransposeSDPAMatcher(bool enable_v_permute) {
 
         auto input_q = ov::Output<Node>(pattern_map.at(input_q_m).get_node_shared_ptr(), input_q_output_idx);
         auto input_k = ov::Output<Node>(pattern_map.at(input_k_m).get_node_shared_ptr(), input_k_output_idx);
-        if (enable_v_permute) {
+        if (fuse_v_permute) {
             auto input_v = ov::Output<Node>(pattern_map.at(input_v_m).get_node_shared_ptr(), input_v_output_idx);
         }
 
         OutputVector inputs;
         inputs.push_back(ov::Output<Node>(pattern_map.at(input_q_m).get_node_shared_ptr(), input_q_output_idx));
         inputs.push_back(ov::Output<Node>(pattern_map.at(input_k_m).get_node_shared_ptr(), input_k_output_idx));
-        if (enable_v_permute) {
+        if (fuse_v_permute) {
             inputs.push_back(ov::Output<Node>(pattern_map.at(input_v_m).get_node_shared_ptr(), input_v_output_idx));
         } else {
             inputs.push_back(sdpa->get_input_source_output(2));

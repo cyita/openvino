@@ -29,7 +29,7 @@ public:
 class TransposeSDPAMatcher : public ov::pass::MatcherPass {
 public:
     OPENVINO_MATCHER_PASS_RTTI("TransposeSDPAMatcher");
-    TransposeSDPAMatcher(bool enable_v_permute);
+    TransposeSDPAMatcher(bool fuse_v_permute);
 };
 
 class TransposeVLSDPAMatcher : public ov::pass::MatcherPass {

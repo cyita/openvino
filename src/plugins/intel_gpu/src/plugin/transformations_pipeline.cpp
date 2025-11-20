@@ -356,6 +356,7 @@ void TransformationsPipeline::apply(std::shared_ptr<ov::Model> func) {
     bool enableInt8;
     ov::element::Type infer_precision = ov::element::dynamic;
     bool unroll_loop = config.get_enable_loop_unrolling();
+    // ov::serialize(func, "D:\\yina\\videochat-flash-cpp\\maoyuech-videochat-flash-cpp\\graph_dump\\saved_graphs\\model_before_trans_pipe.xml");
     {
         ov::pass::Manager manager("Plugin:GPU");
         auto pass_config = manager.get_pass_config();
