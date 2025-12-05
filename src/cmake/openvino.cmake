@@ -38,7 +38,8 @@ target_include_directories(${TARGET_NAME} PUBLIC
     $<BUILD_INTERFACE:${OpenVINO_SOURCE_DIR}/src/core/include>
     $<BUILD_INTERFACE:${OpenVINO_SOURCE_DIR}/src/inference/include>
     $<BUILD_INTERFACE:${OpenVINO_SOURCE_DIR}/src/frontends/common/include>
-    $<BUILD_INTERFACE:${OpenVINO_SOURCE_DIR}/src/common/transformations/include>)
+    $<BUILD_INTERFACE:${OpenVINO_SOURCE_DIR}/src/common/transformations/include>
+    $<BUILD_INTERFACE:${OpenVINO_SOURCE_DIR}/src/plugins/intel_gpu/include>)
 
 # to be aligned with OpenVINO archive, where all headers are located in the same folder and
 # exposed via openvino::runtime
